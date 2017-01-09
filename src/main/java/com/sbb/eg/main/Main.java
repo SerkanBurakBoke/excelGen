@@ -5,6 +5,8 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.ss.util.CellReference;
@@ -18,10 +20,17 @@ import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTTableColumns;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTTableStyleInfo;
 
 public class Main {
+	Logger logger = Logger.getLogger(Main.class);
 	static String[] days = { "Pazar", "Pazartesi", "Salý", "Çarþamba", "Perþembe", "Cuma", "Cumartesi" };
 	static String[] months = { "Ocak", "Þubat", "Mart", "Nisan", "Mayýs", "Haziran", "Temmuz", "Aðustos", "Eylül",
 			"Ekim", "Kasým", "Aralýk" };
+	
 	public static void main(String[] args) {
+//		BasicConfigurator.configure();
+		new Main().generateExcel();
+	}
+
+	private void generateExcel() {
 		try {
 
 			String filename = "C:/NewExcelFile.xlsx";
@@ -36,11 +45,10 @@ public class Main {
 			while (calendar.get(Calendar.YEAR) == currentYear) {
 				if (month != calendar.get(Calendar.MONTH)) {
 					if(month >= 0)
-					addTable(sheet, 6, day, "TableStyleMedium9",months[month]);
+						addTable(sheet, 6, day, "TableStyleMedium9",months[month]);
 					day = 1;
-					System.out.println("\n\n\n\n");
-					System.out.println("-----------------------------------");
-					System.out.println("\n\n\n\n");
+					logger.info("\n\n\n\n-----------------------------------\n\n\n\n");
+
 					month = calendar.get(Calendar.MONTH);
 					
 					sheet = workbook.createSheet(months[month]);
@@ -80,15 +88,25 @@ public class Main {
 				calendar.add(Calendar.DAY_OF_MONTH, 1);
 				if (month != calendar.get(Calendar.MONTH)) {
 					row.createCell(0).setCellValue("");
-					row.createCell(1).setCellValue("");
-					row.createCell(2).setCellValue("");
+
+					row.getCell(1).setCellType(Cell.CELL_TYPE_FORMULA);
+					row.getCell(1).setCellFormula("SUM(B2"+":B"+(day-1)+")");
+
+					row.getCell(2).setCellType(Cell.CELL_TYPE_FORMULA);
+					row.getCell(2).setCellFormula("SUM(C2"+":C"+(day-1)+")");
+
 					row.createCell(3).setCellValue("");
+					row.getCell(3).setCellType(Cell.CELL_TYPE_FORMULA);
+					row.getCell(3).setCellFormula("SUM(D2"+":D"+(day-1)+")");
+
+					
 					row.createCell(4);
 					row.getCell(4).setCellType(Cell.CELL_TYPE_FORMULA);
-					row.getCell(4).setCellFormula("SUM(B"+day+",C"+day+")");
+					row.getCell(4).setCellFormula("SUM(E2"+":E"+(day-1)+")");
+
 					row.createCell(5);
 					row.getCell(5).setCellType(Cell.CELL_TYPE_FORMULA);
-					row.getCell(5).setCellFormula("SUM(D"+day+",E"+day+")");
+					row.getCell(5).setCellFormula("SUM(F2"+":F"+(day-1)+")");
 					
 				}
 
