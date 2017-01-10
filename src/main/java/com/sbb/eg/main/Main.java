@@ -7,9 +7,11 @@ import java.util.Date;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.hssf.usermodel.HSSFDataFormat;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFTable;
@@ -20,119 +22,117 @@ import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTTableColumns;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTTableStyleInfo;
 
 public class Main {
-	Logger logger = Logger.getLogger(Main.class);
+	Logger log = Logger.getLogger(Main.class);
 	static String[] days = { "Pazar", "Pazartesi", "Salý", "Çarþamba", "Perþembe", "Cuma", "Cumartesi" };
 	static String[] months = { "Ocak", "Þubat", "Mart", "Nisan", "Mayýs", "Haziran", "Temmuz", "Aðustos", "Eylül",
 			"Ekim", "Kasým", "Aralýk" };
-	
+	static String[] headers = { "Tarih", "Yapý Kredi", "Kuveyt Türk", "Nakit", "KK", "Toplam" };
+	static String sumInfo = "Toplam";
+
 	public static void main(String[] args) {
-//		BasicConfigurator.configure();
-		new Main().generateExcel();
+		BasicConfigurator.configure();
+		new Main().generateExcel(2019);
 	}
 
-	private void generateExcel() {
+	private void generateExcel(int year) {
 		try {
 
-			String filename = "C:/NewExcelFile.xlsx";
+			String filename = "C:/ciro_" + year + ".xlsx";
 			XSSFWorkbook workbook = new XSSFWorkbook();
 
 			Calendar calendar = Calendar.getInstance();
+			calendar.set(Calendar.YEAR, year);
+			calendar.set(Calendar.DAY_OF_YEAR, 1);
 			int currentYear = calendar.get(Calendar.YEAR);
 			int month = -1;
 			short day = 1;
 			XSSFSheet sheet = null;
-			
+
 			while (calendar.get(Calendar.YEAR) == currentYear) {
 				if (month != calendar.get(Calendar.MONTH)) {
-					if(month >= 0)
-						addTable(sheet, 6, day, "TableStyleMedium9",months[month]);
+					if (month >= 0)
+						addTable(sheet, 6, day, "TableStyleMedium9", months[month]);
 					day = 1;
-					logger.info("\n\n\n\n-----------------------------------\n\n\n\n");
+					log.info("\n\n\n\n-----------------------------------\n\n\n\n");
 
 					month = calendar.get(Calendar.MONTH);
-					
 					sheet = workbook.createSheet(months[month]);
-
 					XSSFRow rowhead = sheet.createRow((short) 0);
-					rowhead.createCell(0).setCellValue("Tarih");
-					rowhead.createCell(1).setCellValue("Yapý Kredi");
-					rowhead.createCell(2).setCellValue("Kuveyt Türk");
-					rowhead.createCell(3).setCellValue("Nakit");
-					rowhead.createCell(4).setCellValue("KK");
-					rowhead.createCell(5).setCellValue("Toplam");
-
+					for (int i = 0; i < headers.length; i++)
+						rowhead.createCell(i).setCellValue(headers[i]);
 				}
-				
+
 				if (calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
 					calendar.add(Calendar.DAY_OF_MONTH, 1);
 					continue;
 				}
-				
+
 				XSSFRow row = sheet.createRow(day);
 				day++;
 				row.createCell(0).setCellValue(formatDate(calendar));
 
-				row.createCell(1).setCellValue("");
-				row.createCell(2).setCellValue("");
-				row.createCell(3).setCellValue("");
-				row.createCell(4);
-				row.getCell(4).setCellType(Cell.CELL_TYPE_FORMULA);
-				row.getCell(4).setCellFormula("SUM(B"+day+",C"+day+")");
-				row.createCell(5);
-				row.getCell(5).setCellType(Cell.CELL_TYPE_FORMULA);
-				row.getCell(5).setCellFormula("SUM(D"+day+",E"+day+")");
+				createCell(row, 1, generateNumericDataStyle(workbook));
+				createCell(row, 2, generateNumericDataStyle(workbook));
+				createCell(row, 3, generateNumericDataStyle(workbook));
 
+				createRowSumCell(day, row, 4, "B", "C");
+				createRowSumCell(day, row, 5, "D", "E");
 
-
-				System.out.println(formatDate(calendar));
+				log.info(formatDate(calendar));
 				calendar.add(Calendar.DAY_OF_MONTH, 1);
 				if (month != calendar.get(Calendar.MONTH)) {
-					row.createCell(0).setCellValue("");
+					row.createCell(0).setCellValue(sumInfo);
 
-					row.getCell(1).setCellType(Cell.CELL_TYPE_FORMULA);
-					row.getCell(1).setCellFormula("SUM(B2"+":B"+(day-1)+")");
+					for (int i = 1; i < headers.length; i++) {
+						char cellChar = (char) ('A' + i);
+						row.getCell(i).setCellType(CellType.FORMULA);
+						row.getCell(i).setCellFormula("SUM(" + cellChar + "2" + ":" + cellChar + (day - 1) + ")");
+					}
 
-					row.getCell(2).setCellType(Cell.CELL_TYPE_FORMULA);
-					row.getCell(2).setCellFormula("SUM(C2"+":C"+(day-1)+")");
-
-					row.createCell(3).setCellValue("");
-					row.getCell(3).setCellType(Cell.CELL_TYPE_FORMULA);
-					row.getCell(3).setCellFormula("SUM(D2"+":D"+(day-1)+")");
-
-					
-					row.createCell(4);
-					row.getCell(4).setCellType(Cell.CELL_TYPE_FORMULA);
-					row.getCell(4).setCellFormula("SUM(E2"+":E"+(day-1)+")");
-
-					row.createCell(5);
-					row.getCell(5).setCellType(Cell.CELL_TYPE_FORMULA);
-					row.getCell(5).setCellFormula("SUM(F2"+":F"+(day-1)+")");
-					
 				}
 
 			}
-			
-			addTable(sheet, 6, day, "TableStyleMedium9",months[month]);
 
-			
+			addTable(sheet, 6, day, "TableStyleMedium9", months[month]);
 
-			
-			
 			FileOutputStream fileOut = new FileOutputStream(filename);
 			workbook.write(fileOut);
 			workbook.close();
 			fileOut.close();
-			System.out.println("Your excel file has been generated!");
+			log.info("Your excel file has been generated!");
 
 		} catch (Exception ex) {
-			System.out.println(ex);
+			log.error(ex);
 		}
 	}
 
+	private XSSFCellStyle generateNumericDataStyle(XSSFWorkbook workbook) {
+		XSSFCellStyle style = workbook.createCellStyle();
+		style.setDataFormat(HSSFDataFormat.getBuiltinFormat("0.00"));
+		return style;
+	}
+
+	private void createRowSumCell(short day, XSSFRow row, int cellNum, String firstCell, String secondCell) {
+		createCell(row, cellNum);
+		row.getCell(cellNum).setCellType(CellType.FORMULA);
+		row.getCell(cellNum).setCellFormula("SUM(" + firstCell + day + "," + secondCell + day + ")");
+		row.getCell(cellNum).setCellStyle(generateNumericDataStyle(row.getSheet().getWorkbook()));
+	}
+
+	private void createCell(XSSFRow row, int cellNum, XSSFCellStyle style) {
+		row.createCell(cellNum);
+		row.getCell(cellNum).setCellType(CellType.NUMERIC);
+		row.getCell(cellNum).setCellStyle(style);
+	}
+
+	private void createCell(XSSFRow row, int cellNum) {
+		createCell(row, cellNum, generateNumericDataStyle(row.getSheet().getWorkbook()));
+	}
+
 	private static void addTable(XSSFSheet sheet, int columnRange, int rowRange, String tableStyle, String tableName) {
-		if(sheet == null)
+		if (sheet == null)
 			return;
-		
+
 		XSSFTable my_table = sheet.createTable();
 
 		CTTable cttable = my_table.getCTTable();
@@ -143,7 +143,8 @@ public class Main {
 		table_style.setShowColumnStripes(false); // showColumnStripes=0
 		table_style.setShowRowStripes(true); // showRowStripes=1
 
-		AreaReference my_data_range = new AreaReference(new CellReference(0, 0), new CellReference(rowRange -1 , columnRange - 1));
+		AreaReference my_data_range = new AreaReference(new CellReference(0, 0),
+				new CellReference(rowRange - 1, columnRange - 1));
 
 		cttable.setRef(my_data_range.formatAsString());
 		cttable.setDisplayName(
@@ -161,19 +162,19 @@ public class Main {
 			column.setId(i + 1);
 		}
 	}
-	
+
 	private static String formatDate(Date today) {
 		SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yyyy");
 		String date = DATE_FORMAT.format(today);
 		return date;
 	}
-	
+
 	private static String formatDate(Calendar calendar) {
 		String dateStr = formatDate(calendar.getTime());
 		String dateSp[] = dateStr.split("\\.");
 		dateStr = dateSp[0] + " " + months[calendar.get(Calendar.MONTH)] + " " + dateSp[2];
-		return new StringBuilder().append(dateStr)
-				.append(" ").append(days[calendar.get(Calendar.DAY_OF_WEEK) - 1]).toString();
+		return new StringBuilder().append(dateStr).append(" ").append(days[calendar.get(Calendar.DAY_OF_WEEK) - 1])
+				.toString();
 	}
 
 }
