@@ -31,7 +31,7 @@ public class Main {
 
 	public static void main(String[] args) {
 		BasicConfigurator.configure();
-		new Main().generateExcel(2019);
+		new Main().generateExcel(2017);
 	}
 
 	private void generateExcel(int year) {
@@ -140,22 +140,21 @@ public class Main {
 		CTTableStyleInfo table_style = cttable.addNewTableStyleInfo();
 		table_style.setName(tableStyle);
 
-		table_style.setShowColumnStripes(false); // showColumnStripes=0
-		table_style.setShowRowStripes(true); // showRowStripes=1
+		table_style.setShowColumnStripes(false); 
+		table_style.setShowRowStripes(true); 
 
 		AreaReference my_data_range = new AreaReference(new CellReference(0, 0),
 				new CellReference(rowRange - 1, columnRange - 1));
 
 		cttable.setRef(my_data_range.formatAsString());
 		cttable.setDisplayName(
-				tableName); /* this is the display name of the table */
+				tableName); 
 		cttable.setName(tableName);
-		cttable.setId(1L); // id attribute against table as long value
+		cttable.setId(1L); 
 
 		CTTableColumns columns = cttable.addNewTableColumns();
-		columns.setCount(columnRange); // define number of columns
+		columns.setCount(columnRange); 
 
-		/* Define Header Information for the Table */
 		for (int i = 0; i < columnRange; i++) {
 			CTTableColumn column = columns.addNewTableColumn();
 			column.setName(tableName + i);
