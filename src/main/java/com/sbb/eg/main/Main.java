@@ -47,19 +47,20 @@ public class Main {
 			int month = -1;
 			short day = 1;
 			XSSFSheet sheet = null;
+			XSSFRow row = null;
 
 			while (calendar.get(Calendar.YEAR) == currentYear) {
 				if (month != calendar.get(Calendar.MONTH)) {
-					if (month >= 0)
-						addTable(sheet, 6, day, "TableStyleMedium9", months[month]);
+					if (month >= 0){
+						row = generateLastRow(day, sheet);
+						addTable(sheet, 6, day, "TableStyleMedium9", "table" + months[month]);
+					}
 					day = 1;
 					log.info("\n\n\n\n-----------------------------------\n\n\n\n");
 
 					month = calendar.get(Calendar.MONTH);
 					sheet = workbook.createSheet(months[month]);
-					XSSFRow rowhead = sheet.createRow((short) 0);
-					for (int i = 0; i < headers.length; i++)
-						rowhead.createCell(i).setCellValue(headers[i]);
+					createHeaderRow(sheet);
 				}
 
 				if (calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
@@ -67,7 +68,7 @@ public class Main {
 					continue;
 				}
 
-				XSSFRow row = sheet.createRow(day);
+				row = sheet.createRow(day);
 				day++;
 				row.createCell(0).setCellValue(formatDate(calendar));
 
@@ -80,16 +81,6 @@ public class Main {
 
 				log.info(formatDate(calendar));
 				calendar.add(Calendar.DAY_OF_MONTH, 1);
-				if (month != calendar.get(Calendar.MONTH)) {
-					row.createCell(0).setCellValue(sumInfo);
-
-					for (int i = 1; i < headers.length; i++) {
-						char cellChar = (char) ('A' + i);
-						row.getCell(i).setCellType(CellType.FORMULA);
-						row.getCell(i).setCellFormula("SUM(" + cellChar + "2" + ":" + cellChar + (day - 1) + ")");
-					}
-
-				}
 
 			}
 
@@ -102,8 +93,29 @@ public class Main {
 			log.info("Your excel file has been generated!");
 
 		} catch (Exception ex) {
+			ex.printStackTrace();
 			log.error(ex);
 		}
+	}
+
+	private XSSFRow generateLastRow(short day, XSSFSheet sheet) {
+		XSSFRow row;
+		row = sheet.createRow(day);
+		row.createCell(0).setCellValue(sumInfo);
+
+		for (int i = 1; i < headers.length; i++) {
+			char cellChar = (char) ('A' + i);
+			row.createCell(i).setCellType(CellType.FORMULA);
+			row.getCell(i).setCellFormula("SUM(" + cellChar + "2" + ":" + cellChar + (day) + ")");
+			row.getCell(i).setCellStyle(generateNumericDataStyle(row.getSheet().getWorkbook()));
+		}
+		return row;
+	}
+
+	private void createHeaderRow(XSSFSheet sheet) {
+		XSSFRow rowhead = sheet.createRow((short) 0);
+		for (int i = 0; i < headers.length; i++)
+			rowhead.createCell(i).setCellValue(headers[i]);
 	}
 
 	private XSSFCellStyle generateNumericDataStyle(XSSFWorkbook workbook) {
@@ -133,20 +145,20 @@ public class Main {
 		if (sheet == null)
 			return;
 
-		XSSFTable my_table = sheet.createTable();
+		XSSFTable table = sheet.createTable();
 
-		CTTable cttable = my_table.getCTTable();
+		CTTable cttable = table.getCTTable();
 
-		CTTableStyleInfo table_style = cttable.addNewTableStyleInfo();
-		table_style.setName(tableStyle);
+		CTTableStyleInfo ctTableStyle = cttable.addNewTableStyleInfo();
+		ctTableStyle.setName(tableStyle);
 
-		table_style.setShowColumnStripes(false); 
-		table_style.setShowRowStripes(true); 
+		ctTableStyle.setShowColumnStripes(false); 
+		ctTableStyle.setShowRowStripes(true); 
 
-		AreaReference my_data_range = new AreaReference(new CellReference(0, 0),
-				new CellReference(rowRange - 1, columnRange - 1));
+		AreaReference dataRange = new AreaReference(new CellReference(0, 0),
+				new CellReference(rowRange, columnRange - 1));
 
-		cttable.setRef(my_data_range.formatAsString());
+		cttable.setRef(dataRange.formatAsString());
 		cttable.setDisplayName(
 				tableName); 
 		cttable.setName(tableName);
@@ -163,8 +175,8 @@ public class Main {
 	}
 
 	private static String formatDate(Date today) {
-		SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yyyy");
-		String date = DATE_FORMAT.format(today);
+		SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
+		String date = dateFormat.format(today);
 		return date;
 	}
 
