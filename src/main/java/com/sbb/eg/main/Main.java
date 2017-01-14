@@ -5,7 +5,6 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
-import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFDataFormat;
 import org.apache.poi.ss.usermodel.CellType;
@@ -30,7 +29,6 @@ public class Main {
 	static String sumInfo = "Toplam";
 
 	public static void main(String[] args) {
-		BasicConfigurator.configure();
 		new Main().generateExcel(2017);
 	}
 
