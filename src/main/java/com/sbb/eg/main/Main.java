@@ -25,11 +25,11 @@ public class Main {
 	static String[] days = { "Pazar", "Pazartesi", "Salý", "Çarþamba", "Perþembe", "Cuma", "Cumartesi" };
 	static String[] months = { "Ocak", "Þubat", "Mart", "Nisan", "Mayýs", "Haziran", "Temmuz", "Aðustos", "Eylül",
 			"Ekim", "Kasým", "Aralýk" };
-	static String[] headers = { "Tarih", "Yapý Kredi", "Kuveyt Türk", "Nakit", "KK", "Toplam" };
+	static String[] headers = { "Tarih", "Ýþ Bankasý", "Albaraka", "Nakit   ", "Kredi Kartý", "Toplam     " };
 	static String sumInfo = "Toplam";
 
 	public static void main(String[] args) {
-		new Main().generateExcel(2017);
+		new Main().generateExcel(2019);
 	}
 
 	private void generateExcel(int year) {
@@ -50,8 +50,7 @@ public class Main {
 			while (calendar.get(Calendar.YEAR) == currentYear) {
 				if (month != calendar.get(Calendar.MONTH)) {
 					if (month >= 0){
-						row = generateLastRow(day, sheet);
-						addTable(sheet, 6, day, "TableStyleMedium9", "table" + months[month]);
+						processMonthEnd(month, day, sheet);
 					}
 					day = 1;
 					log.info("\n\n\n\n-----------------------------------\n\n\n\n");
@@ -81,8 +80,9 @@ public class Main {
 				calendar.add(Calendar.DAY_OF_MONTH, 1);
 
 			}
-
+			generateLastRow(day, sheet);
 			addTable(sheet, 6, day, "TableStyleMedium9", months[month]);
+			autoSizeSheet(sheet);
 
 			FileOutputStream fileOut = new FileOutputStream(filename);
 			workbook.write(fileOut);
@@ -96,9 +96,22 @@ public class Main {
 		}
 	}
 
-	private XSSFRow generateLastRow(short day, XSSFSheet sheet) {
-		XSSFRow row;
-		row = sheet.createRow(day);
+	public void processMonthEnd(int month, short day, XSSFSheet sheet) {
+		generateLastRow(day, sheet);
+		addTable(sheet, headers.length, day, "TableStyleMedium9", "table" + months[month]);
+		autoSizeSheet(sheet);
+	}
+
+	public void autoSizeSheet(XSSFSheet sheet) {
+		if (sheet != null) {
+			for (int i = 0; i < headers.length; i++) {
+				sheet.autoSizeColumn(i);
+			}
+		}
+	}
+
+	private void generateLastRow(short day, XSSFSheet sheet) {
+		XSSFRow row = sheet.createRow(day);
 		row.createCell(0).setCellValue(sumInfo);
 
 		for (int i = 1; i < headers.length; i++) {
@@ -107,7 +120,6 @@ public class Main {
 			row.getCell(i).setCellFormula("SUM(" + cellChar + "2" + ":" + cellChar + (day) + ")");
 			row.getCell(i).setCellStyle(generateNumericDataStyle(row.getSheet().getWorkbook()));
 		}
-		return row;
 	}
 
 	private void createHeaderRow(XSSFSheet sheet) {
